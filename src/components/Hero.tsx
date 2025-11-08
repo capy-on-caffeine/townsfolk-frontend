@@ -49,8 +49,8 @@ export const Hero = () => {
               <span className="text-sm font-medium">AI-Powered Idea Validation</span>
             </span>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
-              Get authentic feedback from
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#9b0e0e] to-red-500"> AI personas</span>
+              Validate your product before it
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#9b0e0e] to-red-500"> hits the market</span>
             </h1>
             <p className="text-xl text-gray-400 mt-4 max-w-2xl">
               Validate your startup idea with diverse, AI-generated personas. Get detailed feedback and insights that help you iterate faster and build with confidence.
