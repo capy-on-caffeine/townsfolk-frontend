@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Urbanist } from "next/font/google";
+
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Auth0ProviderClient from "@/components/Auth0ProviderClient";
 
-const inter = Inter({ subsets: ["latin"] });
+const urbanist = Urbanist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Townsfolk - AI Persona Feedback for Startups",
@@ -18,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen bg-black text-white">
+      <body className={`${urbanist.className} antialiased min-h-screen bg-black text-white`}>
         <Auth0ProviderClient>
           <Navigation />
           <main className="pt-16">
