@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+:root {
+  --foreground: #ffffff;
+  --background: #000000;
+  --primary: #9b0e0e;
+  --primary-hover: #7a0b0b;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+/* Custom Utilities */
+.hero-gradient {
+  background: radial-gradient(circle at top right, var(--primary) 0%, transparent 50%);
+}
