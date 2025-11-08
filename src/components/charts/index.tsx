@@ -125,16 +125,41 @@ export function PieChart({ data, colors = ['#4f46e5', '#10b981', '#ef4444'], hei
       .attr('stroke', '#1f2937')
       .style('stroke-width', '2px');
 
-    // Add labels
+      // Add labels
+    const labelArc = d3.arc<d3.PieArcDatum<ChartData>>()
+      .innerRadius(radius * 0.8)
+      .outerRadius(radius * 0.8);
+
     g.selectAll('text')
       .data(pie(data))
       .join('text')
-      .attr('transform', d => `translate(${arc.centroid(d)})`)
+      .attr('transform', d => `translate(${labelArc.centroid(d)})`)
       .attr('dy', '0.35em')
       .attr('text-anchor', 'middle')
-      .text(d => `${d.data.name}: ${d.data.value}%`)
+      .text(d => `${d.data.value}%`)
       .style('fill', '#ffffff')
       .style('font-size', '12px');
+
+    // Add legend
+    const legend = svg.append('g')
+      .attr('transform', `translate(${width + 20}, 20)`);
+
+    data.forEach((d, i) => {
+      const legendItem = legend.append('g')
+        .attr('transform', `translate(0, ${i * 25})`);
+
+      legendItem.append('rect')
+        .attr('width', 16)
+        .attr('height', 16)
+        .attr('fill', colorScale(d.name));
+
+      legendItem.append('text')
+        .attr('x', 24)
+        .attr('y', 12)
+        .text(`${d.name} (${d.value}%)`)
+        .style('fill', '#9ca3af')
+        .style('font-size', '12px');
+    });
 
   }, [data, colors, height]);
 
@@ -171,21 +196,46 @@ export function LineChart({ data, color = '#4f46e5', height = 300 }: {
       .range([margin.left, width - margin.right]);
 
     const y = d3.scaleLinear()
-      .domain([d3.min(data, d => d.y) || 0, d3.max(data, d => d.y) || 0])
+      .domain([
+        Math.min(0, d3.min(data, d => d.y) || 0),
+        Math.max(100, d3.max(data, d => d.y) || 0)
+      ])
       .nice()
       .range([chartHeight, margin.top]);
 
     const line = d3.line<LineChartData>()
       .x(d => x(d.x) || 0)
-      .y(d => y(d.y));
+      .y(d => y(d.y))
+      .curve(d3.curveMonotoneX);
 
     const g = svg.append('g');
+
+    // Add gradient
+    const gradient = g.append('linearGradient')
+      .attr('id', 'line-gradient')
+      .attr('gradientUnits', 'userSpaceOnUse')
+      .attr('x1', 0)
+      .attr('y1', y(0))
+      .attr('x2', 0)
+      .attr('y2', y(100));
+
+    gradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#ef4444');
+
+    gradient.append('stop')
+      .attr('offset', '50%')
+      .attr('stop-color', '#eab308');
+
+    gradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#22c55e');
 
     // Add line
     g.append('path')
       .datum(data)
       .attr('fill', 'none')
-      .attr('stroke', color)
+      .attr('stroke', 'url(#line-gradient)')
       .attr('stroke-width', 2)
       .attr('d', line);
 
@@ -196,7 +246,11 @@ export function LineChart({ data, color = '#4f46e5', height = 300 }: {
       .attr('cx', d => x(d.x) || 0)
       .attr('cy', d => y(d.y))
       .attr('r', 4)
-      .attr('fill', color);
+      .attr('fill', d => {
+        if (d.y >= 75) return '#22c55e';
+        if (d.y >= 50) return '#eab308';
+        return '#ef4444';
+      });
 
     // Add x-axis
     g.append('g')
@@ -216,14 +270,42 @@ export function LineChart({ data, color = '#4f46e5', height = 300 }: {
       .selectAll('text')
       .style('fill', '#9ca3af');
 
+    // Add hover effects
+    const tooltip = d3.select(svgRef.current!.parentElement!)
+      .append('div')
+      .attr('class', 'absolute hidden bg-gray-900 text-white px-2 py-1 rounded text-sm')
+      .style('pointer-events', 'none');
+
+    g.selectAll('circle')
+      .on('mouseover', (event, d) => {
+        const circle = d3.select(event.currentTarget);
+        circle.attr('r', 6)
+          .style('filter', 'brightness(1.2)');
+
+        const datum = d as LineChartData;
+        tooltip.style('display', 'block')
+          .html(`${datum.x}: ${datum.y}%`)
+          .style('left', `${event.pageX + 10}px`)
+          .style('top', `${event.pageY - 10}px`);
+      })
+      .on('mouseout', event => {
+        const circle = d3.select(event.currentTarget);
+        circle.attr('r', 4)
+          .style('filter', 'none');
+
+        tooltip.style('display', 'none');
+      });
+
   }, [data, color, height]);
 
   return (
-    <svg
-      ref={svgRef}
-      width="100%"
-      height={height}
-      className="overflow-visible"
-    />
+    <div className="relative">
+      <svg
+        ref={svgRef}
+        width="100%"
+        height={height}
+        className="overflow-visible"
+      />
+    </div>
   );
 }
