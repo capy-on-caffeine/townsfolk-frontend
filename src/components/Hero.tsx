@@ -48,7 +48,7 @@ export const Hero = () => {
               <span className="w-2 h-2 rounded-full bg-[#9b0e0e] animate-pulse" />
               <span className="text-sm font-medium">AI-Powered Idea Validation</span>
             </span>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight">
               Validate your product before it
               <span className="text-transparent bg-clip-text bg-linear-to-r from-[#9b0e0e] to-red-500"> hits the market</span>
             </h1>
