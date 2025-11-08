@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Urbanist } from "next/font/google";
-
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Auth0ProviderClient from "@/components/Auth0ProviderClient";
 
-const urbanist = Urbanist({ subsets: ["latin"] });
+const urbanist = Urbanist({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-urbanist',
+});
 
 export const metadata: Metadata = {
   title: "Townsfolk - AI Persona Feedback for Startups",
