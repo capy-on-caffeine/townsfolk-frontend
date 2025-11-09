@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<Response> {
   // TODO: Replace with actual database query
+  const { id } = await context.params;
   const mockData = {
     targetGroups: [
       { group: 'Young Professionals', count: 150, sentiment: 85 },
