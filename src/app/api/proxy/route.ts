@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const path = searchParams.get('path') || '';
-    const token = request.headers.get('Authorization');
+    const token = request.headers.get('Authorization') || searchParams.get('authorization');
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers: {
@@ -15,8 +15,44 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    console.log('Upstream response:', response);
+    
+
+    // Check if the response is ok
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Upstream server error:', errorText);
+      return new Response(errorText, {
+        status: response.status,
+        headers: {
+          'Content-Type': response.headers.get('Content-Type') || 'text/plain',
+        },
+      });
+    }
+
+    // Handle SSE responses
+    const responseContentType = response.headers.get('Content-Type');
+    if (responseContentType?.includes('text/event-stream')) {
+      return new Response(response.body, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    try {
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (error) {
+      const text = await response.text();
+      return new Response(text, {
+        headers: {
+          'Content-Type': responseContentType || 'text/plain',
+        },
+      });
+    }
   } catch (error) {
     console.error('Proxy error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

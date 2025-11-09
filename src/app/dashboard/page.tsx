@@ -13,18 +13,20 @@ import { Button } from '@/components/Button';
 import { StatusBadge } from '@/components/StatusBadge';
 import { IdeaStatusListener } from '@/components/IdeaStatusListener';
 
+import { mockIdeas } from '@/utils/mockData';
+
 function DashboardContent() {
   const router = useRouter();
   const [ideas, setIdeas] = useState<DashboardIdea[]>([]);
   const [isLoadingIdeas, setIsLoadingIdeas] = useState(true);
 
-  // Check for active thread ID in localStorage
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('activeThreadId');
-    }
-    return null;
-  });
+  // Commented out persona generation related code
+  // const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
+  //   if (typeof window !== 'undefined') {
+  //     return localStorage.getItem('activeThreadId');
+  //   }
+  //   return null;
+  // });
 
   // Convert API status to dashboard status
   const convertStatus = (status: ImportedIdea['status']): DashboardIdea['status'] => {
@@ -32,80 +34,34 @@ function DashboardContent() {
     return status as DashboardIdea['status'];
   };
 
-  // Load ideas
+  // Load mock ideas
   useEffect(() => {
-    const loadIdeas = async () => {
-      try {
-        const result = await ApiClient.getIdeas();
-        setIdeas(result.ideas.map(idea => ({
-          ...idea,
-          status: convertStatus(idea.status)
-        })));
-      } catch (error) {
-        console.error('Error loading ideas:', error);
-      } finally {
-        setIsLoadingIdeas(false);
-      }
-    };
-
-    loadIdeas();
+    setIdeas(mockIdeas.map(idea => ({
+      ...idea,
+      status: convertStatus(idea.status)
+    })));
+    setIsLoadingIdeas(false);
   }, []);
 
-  // Clear active thread when persona generation is complete
-  useEffect(() => {
-    const personas = localStorage.getItem('generated_personas');
-    if (personas && activeThreadId) {
-      localStorage.removeItem('activeThreadId');
-      setActiveThreadId(null);
-      
-      // Refresh ideas list to show updated status
-      const loadIdeas = async () => {
-        try {
-          const result = await ApiClient.getIdeas();
-          setIdeas(result.ideas.map(idea => ({
-            ...idea,
-            status: convertStatus(idea.status)
-          })));
-        } catch (error) {
-          console.error('Error refreshing ideas:', error);
-        }
-      };
-      loadIdeas();
-    }
-  }, [activeThreadId]);
+  // Commented out persona generation related code
+  // useEffect(() => {
+  //   const personas = localStorage.getItem('generated_personas');
+  //   if (personas && activeThreadId) {
+  //     localStorage.removeItem('activeThreadId');
+  //     setActiveThreadId(null);
+  //   }
+  // }, [activeThreadId]);
+  //           ...idea,
+  //           status: convertStatus(idea.status)
+  //         })));
+  //       } catch (error) {
+  //         console.error('Error refreshing ideas:', error);
+  //       }
+  //     }, 5000); // Refresh every 5 seconds
 
-  // Handle retrying failed idea generation
-  const handleRequeueIdea = async (id: string) => {
-    try {
-      await ApiClient.requeueIdea(id);
-      const result = await ApiClient.getIdeas();
-      setIdeas(result.ideas.map(idea => ({
-        ...idea,
-        status: convertStatus(idea.status)
-      })));
-    } catch (error) {
-      console.error('Error requeueing idea:', error);
-    }
-  };
-
-  // Refresh ideas list periodically when there's an active generation
-  useEffect(() => {
-    if (activeThreadId) {
-      const interval = setInterval(async () => {
-        try {
-          const result = await ApiClient.getIdeas();
-          setIdeas(result.ideas.map(idea => ({
-            ...idea,
-            status: convertStatus(idea.status)
-          })));
-        } catch (error) {
-          console.error('Error refreshing ideas:', error);
-        }
-      }, 5000); // Refresh every 5 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [activeThreadId]);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [activeThreadId]);
 
   return (
     <>
@@ -153,7 +109,7 @@ function DashboardContent() {
                   </Button>
                   {idea.status === 'failed' && (
                     <Button
-                      onClick={() => handleRequeueIdea(idea._id)}
+                      onClick={() => alert('Retry functionality not implemented in mock data')}
                     >
                       Retry
                     </Button>
@@ -165,8 +121,8 @@ function DashboardContent() {
         )}
       </div>
 
-      {/* Show status overlay when there's an active thread */}
-      {activeThreadId && <IdeaStatusListener threadId={activeThreadId} />}
+      {/* Commented out persona generation status overlay */}
+      {/* {activeThreadId && <IdeaStatusListener threadId={activeThreadId} />} */}
     </>
   );
 }

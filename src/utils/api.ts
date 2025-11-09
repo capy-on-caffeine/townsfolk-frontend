@@ -36,7 +36,7 @@ api.interceptors.response.use(
 export const ApiClient = {
   submitIdea: async (idea: IdeaSubmission): Promise<Idea> => {
     try {
-      const { data } = await api.post('', { path: '/ideas' }, { params: { path: '/ideas' } });
+      const { data } = await api.post('', idea, { params: { path: '/ideas' } });
       return data;
     } catch (error) {
       console.error('Failed to submit idea:', error);

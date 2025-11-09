@@ -21,32 +21,32 @@ export default function IdeaDetail() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  useEffect(() => {
-    const loadIdea = async () => {
-      try {
-        const data = await ApiClient.getIdea(id as string);
-        setIdea(data);
-      } catch (error) {
-        console.error('Error loading idea:', error);
-      } finally {
-        setIsLoadingIdea(false);
-      }
-    };
+  // useEffect(() => {
+  //   const loadIdea = async () => {
+  //     try {
+  //       const data = await ApiClient.getIdea(id as string);
+  //       setIdea(data);
+  //     } catch (error) {
+  //       console.error('Error loading idea:', error);
+  //     } finally {
+  //       setIsLoadingIdea(false);
+  //     }
+  //   };
 
-    if (isAuthenticated && id) {
-      loadIdea();
-    }
-  }, [id, isAuthenticated]);
+  //   if (isAuthenticated && id) {
+  //     loadIdea();
+  //   }
+  // }, [id, isAuthenticated]);
 
   const handleRequeue = async () => {
     if (!idea) return;
     
-    try {
-      const updatedIdea = await ApiClient.requeueIdea(idea._id);
-      setIdea(updatedIdea);
-    } catch (error) {
-      console.error('Error requeueing idea:', error);
-    }
+    // try {
+    //   const updatedIdea = await ApiClient.requeueIdea(idea._id);
+    //   setIdea(updatedIdea);
+    // } catch (error) {
+    //   console.error('Error requeueing idea:', error);
+    // }
   };
 
   if (isLoading || !isAuthenticated) {

@@ -19,33 +19,42 @@ export function IdeaStatusListener({ threadId }: { threadId: string }) {
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
+    const runId = localStorage.getItem('activeRunId');
+    if (!runId || !token) {
+      console.error('No run ID or auth token found');
+      return;
+    }
+
     const url = new URL('/api/proxy', window.location.origin);
     url.searchParams.append('path', `/threads/${threadId}/runs/stream`);
-    url.searchParams.append('token', token || '');
+    url.searchParams.append('authorization', `Bearer ${token}`);
     
     const eventSource = new EventSource(url.toString());
     
     eventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        console.log('Raw SSE data:', event.data); // Debug log
+        const rawData = event.data.toString();
+        let data;
         
-        if (data.event === 'on_chain_start') {
+        // Check if this is a metadata message
+        if (rawData.includes('"run_id"')) {
+          data = JSON.parse(rawData);
           setStatus({
             message: 'Starting persona generation...',
             progress: 10,
             status: 'generating'
           });
+          return;
         }
-        else if (data.event === 'on_chain_stream') {
-          setStatus(prev => ({
-            message: 'Generating personas...',
-            progress: Math.min(prev.progress + 10, 90),
-            status: 'generating'
-          }));
-        }
-        else if (data.event === 'on_chain_end' && data.data?.output?.persona) {
+
+        // Parse the actual data
+        data = JSON.parse(rawData);
+
+        // Handle persona data
+        if (Array.isArray(data.persona)) {
           // Store personas in local storage
-          localStorage.setItem('generated_personas', JSON.stringify(data.data.output.persona));
+          localStorage.setItem('generated_personas', JSON.stringify(data.persona));
           
           setStatus({
             message: 'Personas generated successfully!',
@@ -56,27 +65,55 @@ export function IdeaStatusListener({ threadId }: { threadId: string }) {
           // Clean up and redirect after a short delay
           setTimeout(() => {
             eventSource.close();
-            router.push(`/ideas/${data.metadata?.thread_id}/analytics`);
+            router.push(`/ideas/${threadId}/analytics`);
           }, 1500);
+          return;
+        }
+
+        // Handle progress updates
+        if (data.status === 'completed') {
+          setStatus(prev => ({
+            message: 'Finalizing personas...',
+            progress: 90,
+            status: 'generating'
+          }));
+        } else {
+          setStatus(prev => ({
+            message: 'Generating personas...',
+            progress: Math.min(prev.progress + 10, 80),
+            status: 'generating'
+          }));
         }
       } catch (error) {
-        console.error('Error parsing event:', error);
-        setStatus({
-          message: 'Error generating personas',
-          progress: 0,
-          status: 'failed'
+        console.error('Error processing event:', {
+          error,
+          rawData: event.data,
+          eventType: event.type
         });
+        
+        // Only set error state if we're not in the middle of processing
+        if (status.status !== 'generating') {
+          setStatus({
+            message: 'Error processing server response',
+            progress: 0,
+            status: 'failed'
+          });
+        }
       }
     };
 
     eventSource.onerror = (error) => {
       console.error('EventSource error:', error);
-      eventSource.close();
-      setStatus({
-        message: 'Error connecting to server',
-        progress: 0,
-        status: 'failed'
-      });
+      
+      // Only close and show error if we haven't completed
+      if (status.status !== 'completed') {
+        eventSource.close();
+        setStatus({
+          message: 'Lost connection to server',
+          progress: 0,
+          status: 'failed'
+        });
+      }
     };
 
     return () => {
