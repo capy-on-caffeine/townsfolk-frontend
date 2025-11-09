@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/Button';
-import { IdeaStatusListener } from '@/components/IdeaStatusListener';
-import { ApiClient } from '@/utils/api';
+import { JsonViewer } from '@/components/JsonViewer';
 
 interface IdeaFormData {
   title: string;
@@ -15,10 +14,8 @@ interface IdeaFormData {
 }
 
 export function IdeaSubmissionForm() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [threadId, setThreadId] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [response, setResponse] = useState<any>(null);
   const [formData, setFormData] = useState<IdeaFormData>({
     title: '',
     description: '',
@@ -26,125 +23,37 @@ export function IdeaSubmissionForm() {
     mvpLink: '',
   });
 
-  // Initialize token from localStorage on client-side only
-  useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    setToken(storedToken);
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!token) {
-      console.error('No auth token available');
-      return;
-    }
-    
     setLoading(true);
-    const generatedThreadId = "6846d52c-295a-4805-9200-7bd81f365a65";
-    // const generatedThreadId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
-    //   ? crypto.randomUUID()
-    //   : '6846d52c-295a-4805-9200-7bd81f365a65';
-
     
     try {
-      // First create a run
-      // First create a thread if it doesn't exist
-      const createThreadResponse = await fetch(`/api/proxy?path=/threads`, {
+      const threadId = crypto.randomUUID();
+      
+      // Call our new /api/proxy/invoke endpoint
+      const response = await fetch('/api/ideas/invoke', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          thread_id: threadId,
+          title: formData.title,
+          description: formData.description,
+          target_audience: formData.target_audience,
+          number: 2,
+        }),
       });
 
-      if (!createThreadResponse.ok) {
-        throw new Error('Failed to create thread');
+      if (!response.ok) {
+        throw new Error('Failed to submit idea');
       }
 
-      const threadData = await createThreadResponse.json();
-      const actualThreadId = threadData.id || generatedThreadId;
-
-      // Now create a run
-      const payload = {
-        assistant_id: "2803ab92-38c4-509a-a3f8-481003ff6437",
-        model: "gpt-4-1106-preview",
-        instructions: "Generate personas based on the provided idea",
-        tools: [],
-        metadata: {
-          ...formData,
-          number: 3,
-          collection_name: "Personas",
-          personas_db_name: "persona",
-          persona: [],
-          current_persona: null,
-          generated_count: 0,
-          status: "pending"
-        }
-      };
-
-      console.log(payload);
-      
-
-      const createRunResponse = await fetch(`/api/proxy?path=/threads/${actualThreadId}/runs/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      // Read the streaming body, accumulate text, and monkey-patch .text() so later code can still call it
-      if (createRunResponse.body) {
-        const reader = createRunResponse.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        let accumulated = '';
-
-        while (!done) {
-          const { value, done: d } = await reader.read();
-          done = !!d;
-          if (value) {
-            const chunk = decoder.decode(value, { stream: !done });
-            accumulated += chunk;
-            // handle incremental chunk processing here (e.g. update UI)
-            console.log('stream chunk:', chunk);
-          }
-        }
-
-        // Make createRunResponse.text() return the accumulated text for the later code path
-        (createRunResponse as any).text = async () => accumulated;
-      } else {
-        console.warn('Response has no body stream to read.');
-      }
-      
-
-      const responseText = await createRunResponse.text();
-      let runData;
-      try {
-        runData = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse response:', responseText);
-        throw new Error('Invalid response from server');
-      }
-
-      if (!createRunResponse.ok || !runData.id) {
-        throw new Error(runData.error || 'Failed to create run');
-      }
-
-      // Set up thread and run IDs for status tracking
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeThreadId', actualThreadId);
-        localStorage.setItem('activeRunId', runData.id);
-      }
-      setThreadId(actualThreadId);
-      
+      const data = await response.json();
+      setResponse(data);
     } catch (error) {
       console.error('Error in submission process:', error);
-      // Reset thread ID if there was an error
-      setThreadId(null);
+      setResponse(null);
     } finally {
       setLoading(false);
     }
@@ -225,8 +134,13 @@ export function IdeaSubmissionForm() {
         {loading ? 'Starting...' : 'Submit Idea'}
       </Button>
 
-      {/* Show status overlay when thread is created */}
-      {threadId && token && <IdeaStatusListener threadId={threadId} />}
+      {/* Show JSON response when available */}
+      {response && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-100 mb-4">Response:</h2>
+          <JsonViewer data={response} />
+        </div>
+      )}
     </motion.form>
   );
 }

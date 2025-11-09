@@ -9,7 +9,14 @@ interface IdeaStatus {
   status: 'pending' | 'generating' | 'completed' | 'failed';
 }
 
-export function IdeaStatusListener({ threadId }: { threadId: string }) {
+interface IdeaPayload {
+  title: string;
+  description: string;
+  target_audience: string;
+  threadId: string;
+}
+
+export function IdeaStatusListener({ threadId, title, description, target_audience }: IdeaPayload) {
   const router = useRouter();
   const [status, setStatus] = useState<IdeaStatus>({
     message: 'Starting persona generation...',
@@ -19,77 +26,93 @@ export function IdeaStatusListener({ threadId }: { threadId: string }) {
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
-    const runId = localStorage.getItem('activeRunId');
-    if (!runId || !token) {
-      console.error('No run ID or auth token found');
+    if (!token) {
+      console.error('No auth token found');
       return;
     }
 
-    const url = new URL('/api/proxy', window.location.origin);
-    url.searchParams.append('path', `/threads/${threadId}/runs/stream`);
-    url.searchParams.append('authorization', `Bearer ${token}`);
+    let isPolling = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 60; // 1 minute with 1s interval
     
-    const eventSource = new EventSource(url.toString());
-    
-    eventSource.onmessage = (event) => {
+    const checkStatus = async () => {
       try {
-        console.log('Raw SSE data:', event.data); // Debug log
-        const rawData = event.data.toString();
-        let data;
-        
-        // Check if this is a metadata message
-        if (rawData.includes('"run_id"')) {
-          data = JSON.parse(rawData);
-          setStatus({
-            message: 'Starting persona generation...',
-            progress: 10,
-            status: 'generating'
-          });
-          return;
+        const response = await fetch(`/api/ideas/invoke`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            thread_id: threadId,
+            title,
+            description,
+            target_audience,
+            number: 2,
+            collection_name: 'Chatgpt',
+            DB_name: 'persona'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Parse the actual data
-        data = JSON.parse(rawData);
+        const data = await response.json();
+        console.log('Invoke response:', data);
 
-        // Handle persona data
-        if (Array.isArray(data.persona)) {
-          // Store personas in local storage
-          localStorage.setItem('generated_personas', JSON.stringify(data.persona));
-          
+        if (data.status === 'completed' && (Array.isArray(data.personas) || Array.isArray(data.persona))) {
+          // Normalize personas (support `personas` or `persona` naming)
+          const personas = data.personas || data.persona || [];
+
+          // Store full invoke result in localStorage keyed by thread id so
+          // the detail page can show it immediately (fallback if DB isn't updated yet).
+          try {
+            localStorage.setItem(`idea_result_${threadId}`, JSON.stringify(data));
+          } catch (e) {
+            console.warn('Failed to persist idea result locally', e);
+          }
+
           setStatus({
             message: 'Personas generated successfully!',
             progress: 100,
             status: 'completed'
           });
 
-          // Clean up and redirect after a short delay
+          // Clean up and redirect to the idea detail page where we'll show
+          // the detailed info (the page will prefer DB data but fall back to
+          // the local cached result while the backend persists it).
           setTimeout(() => {
-            eventSource.close();
-            router.push(`/ideas/${threadId}/analytics`);
+            router.push(`/ideas/${threadId}`);
           }, 1500);
+          isPolling = false;
           return;
         }
 
-        // Handle progress updates
-        if (data.status === 'completed') {
-          setStatus(prev => ({
-            message: 'Finalizing personas...',
-            progress: 90,
-            status: 'generating'
-          }));
-        } else {
+        // Update progress based on status
+        if (data.status === 'generating') {
           setStatus(prev => ({
             message: 'Generating personas...',
             progress: Math.min(prev.progress + 10, 80),
             status: 'generating'
           }));
         }
+        // If still processing, retry after delay
+        // if (isPolling) {
+        //   retryCount++;
+        //   if (retryCount >= MAX_RETRIES) {
+        //     setStatus({
+        //       message: 'Generation timed out',
+        //       progress: 0,
+        //       status: 'failed'
+        //     });
+        //     isPolling = false;
+        //   } else {
+        //     setTimeout(checkStatus, 1000); // Poll every second
+        //   }
+        // }
       } catch (error) {
-        console.error('Error processing event:', {
-          error,
-          rawData: event.data,
-          eventType: event.type
-        });
+        console.error('Error checking status:', error);
         
         // Only set error state if we're not in the middle of processing
         if (status.status !== 'generating') {
@@ -99,25 +122,29 @@ export function IdeaStatusListener({ threadId }: { threadId: string }) {
             status: 'failed'
           });
         }
+        
+        // Retry on error
+        // if (isPolling) {
+        //   retryCount++;
+        //   if (retryCount >= MAX_RETRIES) {
+        //     setStatus({
+        //       message: 'Generation failed',
+        //       progress: 0,
+        //       status: 'failed'
+        //     });
+        //     isPolling = false;
+        //   } else {
+        //     setTimeout(checkStatus, 1000);
+        //   }
+        // }
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('EventSource error:', error);
-      
-      // Only close and show error if we haven't completed
-      if (status.status !== 'completed') {
-        eventSource.close();
-        setStatus({
-          message: 'Lost connection to server',
-          progress: 0,
-          status: 'failed'
-        });
-      }
-    };
+    // Start polling
+    // checkStatus();
 
     return () => {
-      eventSource.close();
+      isPolling = false;
     };
   }, [threadId, router]);
 

@@ -22,21 +22,67 @@ export default function IdeaDetail() {
   }, [isAuthenticated, isLoading, router]);
 
   // useEffect(() => {
-  //   const loadIdea = async () => {
-  //     try {
-  //       const data = await ApiClient.getIdea(id as string);
-  //       setIdea(data);
-  //     } catch (error) {
-  //       console.error('Error loading idea:', error);
-  //     } finally {
-  //       setIsLoadingIdea(false);
-  //     }
-  //   };
+  useEffect(() => {
+    const loadIdea = async () => {
+      try {
+        // First try to read a locally cached invoke result saved by the
+        // frontend when the upstream invoke returns quickly. This allows
+        // the detail page to show immediate results even if the backend
+        // hasn't persisted the idea to the DB yet.
+        const cached = typeof window !== 'undefined' ? localStorage.getItem(`idea_result_${id}`) : null;
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            // Map parsed invoke response to our Idea shape
+            const personas = parsed.personas || parsed.persona || [];
+            const aiFeedback = personas.map((p: any, idx: number) => ({
+              personaId: p.id || p.name || `${id}-p-${idx}`,
+              personaType: p.type || 'Persona',
+              personaProfile: `${p.name || ''}${p.age ? `, ${p.age}` : ''}${p.occupation ? ` — ${p.occupation}` : ''}${p.bio ? `\n${p.bio}` : ''}`,
+              feedback: p.feedback || '',
+            }));
 
-  //   if (isAuthenticated && id) {
-  //     loadIdea();
-  //   }
-  // }, [id, isAuthenticated]);
+            const mapped: any = {
+              _id: parsed.thread_id || id,
+              title: parsed.title || parsed.name || 'Untitled',
+              description: parsed.description || '',
+              targetAudience: parsed.target_audience || parsed.targetAudience || '',
+              mvpLink: parsed.mvp_link || parsed.mvpLink || '',
+              status: parsed.status === 'completed' ? 'completed' : parsed.status || 'processing',
+              aiFeedback,
+              jobId: parsed.job_id || parsed.jobId,
+              createdAt: parsed.created_at || new Date().toISOString(),
+              updatedAt: parsed.updated_at || new Date().toISOString(),
+            };
+
+            setIdea(mapped as any);
+            setIsLoadingIdea(false);
+            // Continue and try to refresh from API to get canonical DB state
+          } catch (e) {
+            console.warn('Failed to parse cached idea result', e);
+          }
+        }
+
+        if (isAuthenticated && id) {
+          try {
+            const data = await ApiClient.getIdea(id as string);
+            setIdea(data);
+          } catch (error) {
+            console.error('Error loading idea from API:', error);
+          } finally {
+            setIsLoadingIdea(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading idea:', error);
+        setIsLoadingIdea(false);
+      }
+    };
+
+    if (isAuthenticated && id) {
+      loadIdea();
+    }
+  }, [id, isAuthenticated]);
 
   const handleRequeue = async () => {
     if (!idea) return;
