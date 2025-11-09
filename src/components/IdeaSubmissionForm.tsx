@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/Button';
-import { JsonViewer } from '@/components/JsonViewer';
+import { FeedbackDisplay } from '@/components/FeedbackDisplay';
 
 interface IdeaFormData {
   title: string;
@@ -134,12 +134,13 @@ export function IdeaSubmissionForm() {
         {loading ? 'Starting...' : 'Submit Idea'}
       </Button>
 
-      {/* Show JSON response when available */}
-      {response && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-100 mb-4">Response:</h2>
-          <JsonViewer data={response} />
-        </div>
+      {/* Show feedback when available */}
+      {response?.result?.persona && (
+        <FeedbackDisplay 
+          personas={response.result.persona}
+          title={formData.title}
+          description={formData.description}
+        />
       )}
     </motion.form>
   );
