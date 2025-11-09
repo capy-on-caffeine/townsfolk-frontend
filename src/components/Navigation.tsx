@@ -8,20 +8,20 @@ export default function Navigation() {
   const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
 
   return (
-    <nav className="fixed w-full top-0 bg-black/80 backdrop-blur-sm border-b border-white/10 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <Link href="/" className="text-white font-bold text-xl">
-            Townsfolk
+    <nav className="fixed left-1/2 -translate-x-1/2 top-4 w-[98%] max-w-7xl bg-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl shadow-lg shadow-black/10 z-50 before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-30">
+      <div className="px-8 py-4 relative">
+        <div className="flex justify-between items-center">
+          <Link href="/" className="text-white font-bold text-2xl tracking-wider">
+            TOWNSFOLK
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-8">
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard" className="text-white hover:text-gray-300">
+                <Link href="/dashboard" className="text-white/90 hover:text-white transition-colors">
                   Dashboard
                 </Link>
-                <Link href="/ideas/new" className="text-white hover:text-gray-300">
+                <Link href="/ideas/new" className="text-white/90 hover:text-white transition-colors">
                   New Idea
                 </Link>
                 <Button

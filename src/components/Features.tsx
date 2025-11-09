@@ -58,14 +58,16 @@ export const Features = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="relative group"
+              className="relative group h-full"
             >
-              <div className="relative z-10 p-8 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-colors hover:bg-white/10">
-                <div className="inline-block text-3xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-400">{feature.description}</p>
+              <div className="relative z-10 p-8 bg-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-30 h-full flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold text-white/90">{feature.title}</h3>
+                  <div className="text-3xl">{feature.icon}</div>
+                </div>
+                <p className="text-white/70 flex-grow">{feature.description}</p>
               </div>
-              <div className="absolute -inset-0.5 bg-linear-to-r from-[#9b0e0e] to-red-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity" />
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#9b0e0e] to-red-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
             </motion.div>
           ))}
         </div>
