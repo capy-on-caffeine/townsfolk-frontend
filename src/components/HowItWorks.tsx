@@ -125,14 +125,15 @@ export function HowItWorks() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                                className='relative'
+                                className='relative h-full'
                             >
-                                {/* glassmorphic card with red glassy border; text left-aligned */}
                                 <div
-                                    className='p-6 mx-2 rounded-2xl overflow-hidden flex flex-col items-start text-left'
+                                    className='p-6 mx-2 rounded-2xl overflow-hidden flex flex-col items-start text-left h-full'
                                     style={{
+                                        minHeight: '300px', // Set fixed minimum height
+                                        width: '100%', // Ensure full width
                                         background:
-                                            'linear-gradient(315deg, rgba(255,0,0,0.08), rgba(255,0,0,0.02))', // Inverted red gradient
+                                            'linear-gradient(315deg, rgba(255,0,0,0.08), rgba(255,0,0,0.02))',
                                         border: '1px solid rgba(255,70,70,0.18)',
                                         boxShadow:
                                             '0 8px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02)',
@@ -171,7 +172,7 @@ export function HowItWorks() {
                                     <h3 className='text-xl font-semibold text-white mb-3 w-full'>
                                         {step.title}
                                     </h3>
-                                    <p className='text-gray-300 text-sm w-full'>{step.description}</p>
+                                    <p className='text-gray-300 text-sm w-full flex-grow'>{step.description}</p>
                                 </div>
                             </motion.div>
                         ))}
