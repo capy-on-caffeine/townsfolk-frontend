@@ -30,13 +30,13 @@ export const Hero = () => {
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-black">
-        <div className="absolute inset-0 bg-linear-to-r from-[#9b0e0e]/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#9b0e0e]/20 to-transparent" />
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
         <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-radial from-[#9b0e0e]/20 to-transparent opacity-50 blur-3xl" />
       </div>
 
       {/* Content */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="max-w-4xl"
           variants={containerVariants}
